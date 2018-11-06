@@ -30,8 +30,10 @@ main() {
       ;;
   esac
 
-  # This fetches latest stable release
-  cargo install cross || true
+  # Install cross for linux cross compilation
+  if [ $TRAVIS_OS_NAME = linux ]; then
+    cargo install cross --force
+  fi
 
   # Install test dependencies
   rustup component add rustfmt-preview
