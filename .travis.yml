@@ -1,0 +1,55 @@
+dist: trusty
+language: rust
+services: docker
+sudo: required
+
+env:
+  global:
+    - CRATE_NAME=path-clean
+    - RUST_BACKTRACE=1
+
+matrix:
+  include:
+    - env: TARGET=armv7-unknown-linux-gnueabihf
+      rust: nightly
+    - env: TARGET=x86_64-unknown-linux-musl
+      rust: nightly
+    - env: TARGET=x86_64-apple-darwin
+      rust: nightly
+      os: osx
+    - env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
+      rust: nightly
+
+before_install:
+  - set -e
+
+install:
+  - sh scripts/install.sh
+  - source ~/.cargo/env || true
+
+script:
+  - bash scripts/script.sh
+
+after_script: set +e
+
+before_deploy:
+  - sh scripts/before_deploy.sh
+
+deploy:
+  provider: releases
+  skip_cleanup: true
+  file_glob: true
+  file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
+  api_key:
+    secure: "Dgm8MwQ69Il6qofjF5vKEAvPFZdZLTvpQgiYsWACCVyNn3po+vkwKt2Z3Lp03/m3LHnYwYTCdFIO3fVbwQDTEpgzFT0dMqnpCB9OO7A++qqqLd2t/SgcyAmskMMZ8Tj9pSBlvzcz6SNGQ56InpIobhRrE3u0a6m9gheljuA31lNFcqq4SgpPsLMZRGVnfSs2cYt/RSONVIirbQtbRoj3keZ2oDAHeuHbObw9KjJtSZZTmdEQIl8mCxt9QQQdYMXl1vm5yRUSyPi7Rg3XciGMJt/Wpcuukb4SgMqirb3AwzVH/itMK9FsImWdiAA35tbwz7/BY36TgqF6LI/SV0PHxxIZyjfZoHa9W8nRwKb4YObtVYyWBgGyvlUILWMqbKjiz6ZVFr1XrMKZfCq46CiVPMGsxSOgtnuVRYMRIbrmsM6hCgqhMl97dEeWdk77dQRxWnKZrkx84kU6bN9Mtgl8KlOoDIGWS2a5A0QYrFq07BoP6OTSEyHg+r1AXqBwj6sFct1MfnLaCagi7SyUxNsCgPHNSqccJzGjOHb9U8PXSYFdqRkHkefo98rn/USpazdjiKfbZDkqrxvJZSW4siNBQxvU1F5esGtw2FelA3ZTB5hLJArV+z4XmaBXAC3Rr618rdLWV1ahY3ZOjyyaHsyWwLVutbLPvZwxF0zcUIdzAGg="
+  on:
+    tags: true
+
+cache: cargo
+before_cache:
+  - chmod -R a+r $HOME/.cargo
+
+notifications:
+  email:
+    on_success: never
+    on_failure: never

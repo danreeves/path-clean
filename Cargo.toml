@@ -1,6 +1,15 @@
 [package]
 name = "path-clean"
+description = "A Rust implementation of cleanname or path.Clean"
 version = "0.1.0"
 authors = ["Dan Reeves <hey@danreev.es>"]
+repository = "https://github.com/danreeves/path-clean"
+documentation = "https://docs.rs/path-clean"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+keywords = ["path", "clean"]
 
 [dependencies]
+
+[badges]
+travis-ci = { repository = "danreeves/path-clean", branch = "master" }
