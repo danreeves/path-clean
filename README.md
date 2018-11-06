@@ -48,7 +48,7 @@ For convenience, the [`PathClean`] trait is exposed and comes implemented for [`
 [3]: https://img.shields.io/travis/danreeves/path-clean.svg?style=flat-square
 [4]: https://travis-ci.org/danreeves/path-clean
 [5]: https://img.shields.io/badge/docs-latest-blue.svg?style=flat-square
-[6]: https://docs.rs/crate/path-clean
+[6]: https://docs.rs/path-clean
 [7]: https://img.shields.io/crates/l/path-clean.svg?style=flat-square
 [8]: #license
 

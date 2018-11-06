@@ -11,6 +11,3 @@ keywords = ["path", "clean"]
 exclude = ["scripts/*"]
 
 [dependencies]
-
-[badges]
-travis-ci = { repository = "danreeves/path-clean", branch = "master" }
