@@ -31,7 +31,7 @@ main() {
   esac
 
   # This fetches latest stable release
-  cargo install cross
+  cargo install cross || true
 
   # Install test dependencies
   rustup component add rustfmt-preview
