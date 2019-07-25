@@ -57,10 +57,10 @@ pub fn clean(path: &str) -> String {
 }
 
 fn clean_internal(path: &[u8]) -> Vec<u8> {
-    static DOT: u8 = '.' as u8;
-    static SEP: u8 = '/' as u8;
+    static DOT: u8 = b'.';
+    static SEP: u8 = b'/';
 
-    if path.len() == 0 {
+    if path.is_empty() {
         return vec![DOT];
     }
 
@@ -86,11 +86,8 @@ fn clean_internal(path: &[u8]) -> Vec<u8> {
     }
 
     while r < n {
-        if path[r] == SEP {
-            // empty path element: skip
-            r += 1;
-        } else if path[r] == DOT && (r + 1 == n || path[r + 1] == SEP) {
-            // . element: skip
+        if path[r] == SEP || path[r] == DOT && (r + 1 == n || path[r + 1] == SEP) {
+            // empty path element || . element: skip
             r += 1;
         } else if path[r] == DOT && path[r + 1] == DOT && (r + 2 == n || path[r + 2] == SEP) {
             // .. element: remove to last separator
@@ -104,7 +101,7 @@ fn clean_internal(path: &[u8]) -> Vec<u8> {
                 out.truncate(w);
             } else if !rooted {
                 // cannot backtrack, but not rooted, so append .. element
-                if out.len() > 0 {
+                if !out.is_empty() {
                     out.push(SEP);
                 }
                 out.push(DOT);
@@ -114,7 +111,7 @@ fn clean_internal(path: &[u8]) -> Vec<u8> {
         } else {
             // real path element
             // add slash if needed
-            if rooted && out.len() != 1 || !rooted && out.len() != 0 {
+            if rooted && out.len() != 1 || !rooted && !out.is_empty() {
                 out.push(SEP);
             }
             while r < n && path[r] != SEP {
@@ -125,7 +122,7 @@ fn clean_internal(path: &[u8]) -> Vec<u8> {
     }
 
     // Turn empty string into "."
-    if out.len() == 0 {
+    if out.is_empty() {
         out.push(DOT);
     }
     out
