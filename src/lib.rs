@@ -116,7 +116,8 @@ fn clean_internal(path: &[u8]) -> Vec<u8> {
             // real path element
             // add slash if needed
             if rooted && out.len() != 1 || !rooted && !out.is_empty() {
-                out.push(MAIN_SEPARATOR as u8);
+                // Grab the previous separator
+                out.push(path[r - 1]);
             }
             while r < n && !is_separator(path[r] as char) {
                 out.push(path[r]);
@@ -231,6 +232,7 @@ mod tests {
             ("\\..\\test", "\\test"),
             ("test\\..", "."),
             ("test\\path\\..\\..\\..", ".."),
+            ("test\\path/..\\../another\\path", "another\\path"), // Mixed
         ];
 
         for test in tests {
