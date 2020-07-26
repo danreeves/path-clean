@@ -235,6 +235,7 @@ mod tests {
             ("test\\..", "."),
             ("test\\path\\..\\..\\..", ".."),
             ("test\\path/..\\../another\\path", "another\\path"), // Mixed
+            ("/dir\\../otherDir/test.json", "/otherDir/test.json"), // User example
         ];
 
         for test in tests {
