@@ -77,6 +77,7 @@ fn clean_internal(path: &[u8]) -> Vec<u8> {
     let mut out: Vec<u8> = Vec::with_capacity(n);
     let mut r = 0;
     let mut dotdot = 0;
+    let mut last_separator = MAIN_SEPARATOR as u8;
 
     if rooted {
         out.push(path[0]);
@@ -89,6 +90,7 @@ fn clean_internal(path: &[u8]) -> Vec<u8> {
             || path[r] == DOT && (r + 1 == n || is_separator(path[r + 1] as char))
         {
             // empty path element || . element: skip
+            last_separator = path[r];
             r += 1;
         } else if path[r] == DOT
             && path[r + 1] == DOT
@@ -106,7 +108,7 @@ fn clean_internal(path: &[u8]) -> Vec<u8> {
             } else if !rooted {
                 // cannot backtrack, but not rooted, so append .. element
                 if !out.is_empty() {
-                    out.push(MAIN_SEPARATOR as u8);
+                    out.push(last_separator as u8);
                 }
                 out.push(DOT);
                 out.push(DOT);
