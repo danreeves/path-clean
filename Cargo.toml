@@ -11,3 +11,10 @@ keywords = ["path", "clean"]
 exclude = ["scripts/*"]
 
 [dependencies]
+
+[dev-dependencies]
+criterion = "0.2"
+
+[[bench]]
+name = "clean_benchmark"
+harness = false

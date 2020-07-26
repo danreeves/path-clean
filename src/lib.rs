@@ -40,6 +40,14 @@ impl PathClean<PathBuf> for PathBuf {
     }
 }
 
+pub fn clean(path: &str) -> String {
+    let out = clean_internal(path.as_bytes());
+    // The code only matches/modifies ascii tokens and leaves the rest of
+    // the bytes as they are, so if the input string is valid utf8 the result
+    // will also be valid utf8.
+    unsafe { String::from_utf8_unchecked(out) }
+}
+
 /// The core implementation. It performs the following, lexically:
 /// 1. Reduce multiple slashes to a single slash.
 /// 2. Eliminate `.` path name elements (the current directory).
@@ -48,65 +56,76 @@ impl PathClean<PathBuf> for PathBuf {
 /// 5. Leave intact `..` elements that begin a non-rooted path.
 ///
 /// If the result of this process is an empty string, return the string `"."`, representing the current directory.
-pub fn clean(path: &str) -> String {
-    match path {
-        "" => return ".".to_string(),
-        "." => return ".".to_string(),
-        ".." => return "..".to_string(),
-        "/" => return "/".to_string(),
-        _ => {}
+fn clean_internal(path: &[u8]) -> Vec<u8> {
+    static DOT: u8 = b'.';
+    static SEP: u8 = b'/';
+
+    if path.is_empty() {
+        return vec![DOT];
     }
 
-    let mut out = vec![];
-    let is_root = path.starts_with("/");
+    let rooted = path[0] == SEP;
+    let n = path.len();
 
-    let path = path.trim_end_matches("/");
-    let num_segments = path.split("/").count();
+    // Invariants:
+    //  - reading from path; r is index of next byte to process.
+    //  - dotdot is index in out where .. must stop, either because it is the
+    //    leading slash or it is a leading ../../.. prefix.
+    //
+    // The go code this function is based on handles already-clean paths without
+    // an allocation, but I haven't done that here because I think it
+    // complicates the return signature too much.
+    let mut out: Vec<u8> = Vec::with_capacity(n);
+    let mut r = 0;
+    let mut dotdot = 0;
 
-    for segment in path.split("/") {
-        match segment {
-            "" => continue,
-            "." => {
-                if num_segments == 1 {
-                    out.push(segment);
-                };
-                continue;
+    if rooted {
+        out.push(SEP);
+        r = 1;
+        dotdot = 1
+    }
+
+    while r < n {
+        if path[r] == SEP || path[r] == DOT && (r + 1 == n || path[r + 1] == SEP) {
+            // empty path element || . element: skip
+            r += 1;
+        } else if path[r] == DOT && path[r + 1] == DOT && (r + 2 == n || path[r + 2] == SEP) {
+            // .. element: remove to last separator
+            r += 2;
+            if out.len() > dotdot {
+                // can backtrack, truncate to last separator
+                let mut w = out.len() - 1;
+                while w > dotdot && out[w] != SEP {
+                    w -= 1;
+                }
+                out.truncate(w);
+            } else if !rooted {
+                // cannot backtrack, but not rooted, so append .. element
+                if !out.is_empty() {
+                    out.push(SEP);
+                }
+                out.push(DOT);
+                out.push(DOT);
+                dotdot = out.len();
             }
-            ".." => {
-                let previous = out.pop();
-                if previous.is_some() && !can_backtrack(previous.unwrap()) {
-                    out.push(previous.unwrap());
-                    out.push(segment);
-                } else if previous.is_none() && !is_root {
-                    out.push(segment);
-                };
-                continue;
+        } else {
+            // real path element
+            // add slash if needed
+            if rooted && out.len() != 1 || !rooted && !out.is_empty() {
+                out.push(SEP);
             }
-            _ => {
-                out.push(segment);
+            while r < n && path[r] != SEP {
+                out.push(path[r]);
+                r += 1;
             }
-        };
+        }
     }
 
-    let mut out_str = out.join("/");
-
-    if is_root {
-        out_str = format!("/{}", out_str);
+    // Turn empty string into "."
+    if out.is_empty() {
+        out.push(DOT);
     }
-
-    if out_str.len() == 0 {
-        return ".".to_string();
-    }
-
-    out_str
-}
-
-fn can_backtrack(segment: &str) -> bool {
-    match segment {
-        "." => false,
-        ".." => false,
-        _ => true,
-    }
+    out
 }
 
 #[cfg(test)]
