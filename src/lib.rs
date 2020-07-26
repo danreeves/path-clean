@@ -25,7 +25,7 @@
 //! );
 //! ```
 
-use std::path::PathBuf;
+use std::path::{is_separator, PathBuf, MAIN_SEPARATOR};
 
 /// The Clean trait implements a `clean` method. It's recommended you use the provided [`clean`]
 /// function.
@@ -58,13 +58,12 @@ pub fn clean(path: &str) -> String {
 /// If the result of this process is an empty string, return the string `"."`, representing the current directory.
 fn clean_internal(path: &[u8]) -> Vec<u8> {
     static DOT: u8 = b'.';
-    static SEP: u8 = b'/';
 
     if path.is_empty() {
         return vec![DOT];
     }
 
-    let rooted = path[0] == SEP;
+    let rooted = is_separator(path[0] as char);
     let n = path.len();
 
     // Invariants:
@@ -80,29 +79,34 @@ fn clean_internal(path: &[u8]) -> Vec<u8> {
     let mut dotdot = 0;
 
     if rooted {
-        out.push(SEP);
+        out.push(path[0]);
         r = 1;
         dotdot = 1
     }
 
     while r < n {
-        if path[r] == SEP || path[r] == DOT && (r + 1 == n || path[r + 1] == SEP) {
+        if is_separator(path[r] as char)
+            || path[r] == DOT && (r + 1 == n || is_separator(path[r + 1] as char))
+        {
             // empty path element || . element: skip
             r += 1;
-        } else if path[r] == DOT && path[r + 1] == DOT && (r + 2 == n || path[r + 2] == SEP) {
+        } else if path[r] == DOT
+            && path[r + 1] == DOT
+            && (r + 2 == n || is_separator(path[r + 2] as char))
+        {
             // .. element: remove to last separator
             r += 2;
             if out.len() > dotdot {
                 // can backtrack, truncate to last separator
                 let mut w = out.len() - 1;
-                while w > dotdot && out[w] != SEP {
+                while w > dotdot && !is_separator(out[w] as char) {
                     w -= 1;
                 }
                 out.truncate(w);
             } else if !rooted {
                 // cannot backtrack, but not rooted, so append .. element
                 if !out.is_empty() {
-                    out.push(SEP);
+                    out.push(MAIN_SEPARATOR as u8);
                 }
                 out.push(DOT);
                 out.push(DOT);
@@ -112,9 +116,9 @@ fn clean_internal(path: &[u8]) -> Vec<u8> {
             // real path element
             // add slash if needed
             if rooted && out.len() != 1 || !rooted && !out.is_empty() {
-                out.push(SEP);
+                out.push(MAIN_SEPARATOR as u8);
             }
-            while r < n && path[r] != SEP {
+            while r < n && !is_separator(path[r] as char) {
                 out.push(path[r]);
                 r += 1;
             }
@@ -217,5 +221,20 @@ mod tests {
             PathBuf::from("/test/../path/").clean(),
             PathBuf::from("/path")
         );
+    }
+
+    #[test]
+    #[cfg(target_os = "windows")]
+    fn test_windows_paths() {
+        let tests = vec![
+            ("\\..", "\\"),
+            ("\\..\\test", "\\test"),
+            ("test\\..", "."),
+            ("test\\path\\..\\..\\..", ".."),
+        ];
+
+        for test in tests {
+            assert_eq!(clean(test.0), test.1);
+        }
     }
 }
