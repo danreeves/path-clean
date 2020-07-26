@@ -1,6 +1,10 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "0 9 7 * *" # Run on at 9am on the 7th of every month
 
 env:
   RUSTFLAGS: -Dwarnings
