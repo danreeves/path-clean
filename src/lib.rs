@@ -40,14 +40,6 @@ impl PathClean<PathBuf> for PathBuf {
     }
 }
 
-pub fn clean(path: &str) -> String {
-    let out = clean_internal(path.as_bytes());
-    // The code only matches/modifies ascii tokens and leaves the rest of
-    // the bytes as they are, so if the input string is valid utf8 the result
-    // will also be valid utf8.
-    unsafe { String::from_utf8_unchecked(out) }
-}
-
 /// The core implementation. It performs the following, lexically:
 /// 1. Reduce multiple slashes to a single slash.
 /// 2. Eliminate `.` path name elements (the current directory).
@@ -56,6 +48,14 @@ pub fn clean(path: &str) -> String {
 /// 5. Leave intact `..` elements that begin a non-rooted path.
 ///
 /// If the result of this process is an empty string, return the string `"."`, representing the current directory.
+pub fn clean(path: &str) -> String {
+    let out = clean_internal(path.as_bytes());
+    // The code only matches/modifies ascii tokens and leaves the rest of
+    // the bytes as they are, so if the input string is valid utf8 the result
+    // will also be valid utf8.
+    unsafe { String::from_utf8_unchecked(out) }
+}
+
 fn clean_internal(path: &[u8]) -> Vec<u8> {
     static DOT: u8 = b'.';
     static SEP: u8 = b'/';
