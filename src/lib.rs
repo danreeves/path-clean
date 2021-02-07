@@ -59,11 +59,13 @@ where
             Component::CurDir => (),
             Component::ParentDir => match out.last() {
                 Some(Component::RootDir) => (),
-                Some(Component::CurDir) | Some(Component::ParentDir) => out.push(comp),
-                Some(_) => {
+                Some(Component::Normal(_)) => {
                     out.pop();
                 }
-                None => out.push(comp),
+                None
+                | Some(Component::CurDir)
+                | Some(Component::ParentDir)
+                | Some(Component::Prefix(_)) => out.push(comp),
             },
             comp => out.push(comp),
         }
