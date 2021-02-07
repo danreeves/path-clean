@@ -69,15 +69,11 @@ where
         }
     }
 
-    if out.is_empty() {
-        out.push(Component::CurDir);
+    if !out.is_empty() {
+        out.iter().collect()
+    } else {
+        PathBuf::from(".")
     }
-
-    out.iter().fold(PathBuf::new(), |mut out, segment| {
-        out.push(segment);
-
-        out
-    })
 }
 
 #[cfg(test)]
