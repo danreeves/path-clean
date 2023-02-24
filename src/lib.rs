@@ -178,7 +178,10 @@ mod tests {
             ("test\\..", "."),
             ("test\\path\\..\\..\\..", ".."),
             ("test\\path/..\\../another\\path", "another\\path"), // Mixed
+            ("test\\path\\my/path", "test\\path\\my\\path"),      // Mixed 2
             ("/dir\\../otherDir/test.json", "/otherDir/test.json"), // User example
+            ("c:\\test\\..", "c:\\"),                             // issue #12
+            ("c:/test/..", "c:/"),                                // issue #12
         ];
 
         for test in tests {
