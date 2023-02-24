@@ -55,13 +55,18 @@ impl PathClean for PathBuf {
 /// 5. Leave intact `..` elements that begin a non-rooted path.
 ///
 /// If the result of this process is an empty string, return the string `"."`, representing the current directory.
+#[inline]
 pub fn clean<P>(path: P) -> PathBuf
 where
     P: AsRef<Path>,
 {
+    clean_impl(path.as_ref())
+}
+
+fn clean_impl(path: &Path) -> PathBuf {
     let mut out = Vec::new();
 
-    for comp in path.as_ref().components() {
+    for comp in path.components() {
         match comp {
             Component::CurDir => (),
             Component::ParentDir => match out.last() {
