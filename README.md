@@ -16,7 +16,7 @@ cargo add path-clean
 ```rust
 use std::path::PathBuf;
 use path_clean::{clean, PathClean};
-assert_eq!(clean("hello/world/.."), "hello");
+assert_eq!(clean("hello/world/.."), PathBuf::from("hello"));
 assert_eq!(
   PathBuf::from("/test/../path/").clean(),
   PathBuf::from("/path")
