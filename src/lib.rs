@@ -13,7 +13,7 @@
 //! any symlink resolution or absolute path resolution. For more information you can see ["Getting Dot-Dot
 //! Right"](https://9p.io/sys/doc/lexnames.html).
 //!
-//! For convenience, the [`PathClean`] trait is exposed and comes implemented for [`std::path::PathBuf`].
+//! For convenience, the [`PathClean`] trait is exposed and comes implemented for [`std::path::{Path, PathBuf}`].
 //!
 //! ```rust
 //! use std::path::PathBuf;
@@ -35,6 +35,13 @@ pub trait PathClean {
 
 /// PathClean implemented for `Path`
 impl PathClean for Path {
+    fn clean(&self) -> PathBuf {
+        clean(self)
+    }
+}
+
+/// PathClean implemented for `PathBuf`
+impl PathClean for PathBuf {
     fn clean(&self) -> PathBuf {
         clean(self)
     }
@@ -81,7 +88,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::{clean, PathClean};
-    use std::path::PathBuf;
+    use std::path::{Path, PathBuf};
 
     #[test]
     fn test_empty_path_is_current_dir() {
@@ -167,6 +174,11 @@ mod tests {
             PathBuf::from("/test/../path/").clean(),
             PathBuf::from("/path")
         );
+    }
+
+    #[test]
+    fn test_path_trait() {
+        assert_eq!(Path::new("/test/../path/").clean(), PathBuf::from("/path"));
     }
 
     #[test]
