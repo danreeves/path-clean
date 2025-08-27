@@ -295,4 +295,43 @@ mod tests {
             assert_eq!(clean(input), PathBuf::from(expected));
         }
     }
+
+    #[test]
+    fn test_edge_cases_for_windows_fix() {
+        // Test edge cases to ensure our Windows fix doesn't cause issues
+        
+        // Paths that should not be affected by the fix
+        let unaffected_tests = vec![
+            // Regular Unix paths
+            ("/usr/bin", "/usr/bin"),
+            ("usr/bin", "usr/bin"),
+            // Relative paths
+            ("../test", "../test"),
+            ("./test", "test"),
+            // Empty and current dir
+            ("", "."),
+            (".", "."),
+            // Multiple separators
+            ("//test", "/test"),
+            ("test//", "test"),
+        ];
+        
+        for (input, expected) in unaffected_tests {
+            assert_eq!(clean(input), PathBuf::from(expected), "Failed for: {}", input);
+        }
+        
+        // Paths that might be affected but should still work correctly
+        let potentially_affected_tests = vec![
+            // Single character paths that might look like drive letters
+            ("C", "C"),
+            ("C/", "C"),
+            ("D/../C", "C"),
+            // Mixed separators
+            ("test/path\\other", "test/path\\other"), // On Unix, backslash is just a character
+        ];
+        
+        for (input, expected) in potentially_affected_tests {
+            assert_eq!(clean(input), PathBuf::from(expected), "Failed for: {}", input);
+        }
+    }
 }
