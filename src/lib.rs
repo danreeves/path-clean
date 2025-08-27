@@ -78,6 +78,18 @@ where
         }
     }
 
+    // Handle Windows absolute paths: ensure Prefix components are followed by RootDir when needed
+    if cfg!(windows) && out.len() >= 2 {
+        if let Some(Component::Prefix(_)) = out.first() {
+            if let Some(Component::Normal(_)) = out.get(1) {
+                // Insert RootDir after Prefix if the next component is Normal
+                // This handles the case where cross-drive navigation results in [Prefix, Normal, ...]
+                // but should be [Prefix, RootDir, Normal, ...] for absolute paths
+                out.insert(1, Component::RootDir);
+            }
+        }
+    }
+
     if !out.is_empty() {
         out.iter().collect()
     } else {
@@ -198,6 +210,89 @@ mod tests {
 
         for test in tests {
             assert_eq!(clean(test.0), PathBuf::from(test.1));
+        }
+    }
+
+    #[test]
+    #[cfg(target_os = "windows")]
+    fn test_windows_cross_driver_paths() {
+        // Test cases for cross-driver relative paths - issue #16
+        let tests = vec![
+            // Simple cross-driver case
+            ("D:\\test\\..\\..\\..\\..\\C:\\Users\\test", "C:\\Users\\test"),
+            // Original reported case 
+            ("D:\\a\\pnp-rs\\pnp-rs\\fixtures\\global-cache\\../../../../../../C:/Users/runneradmin/AppData/Local/Yarn/Berry/cache/source-map-npm-0.6.1-1a3621db16-10c0.zip/node_modules/source-map/", 
+             "C:\\Users\\runneradmin\\AppData\\Local\\Yarn\\Berry\\cache\\source-map-npm-0.6.1-1a3621db16-10c0.zip\\node_modules\\source-map\\"),
+            // Mixed slash case
+            ("D:/test/../../../C:\\Users\\test", "C:\\Users\\test"),
+        ];
+
+        for test in tests {
+            assert_eq!(clean(test.0), PathBuf::from(test.1));
+        }
+    }
+
+    #[test]
+    fn debug_cross_drive_issue() {
+        // Test cases that should reveal the issue - using forward slashes for Unix compatibility
+        let test_cases = vec![
+            // Simple case
+            ("C:/test/../Users", "C:/Users"),
+            // Cross-drive case
+            ("D:/test/../../C:/Users", "C:/Users"),
+        ];
+        
+        for (input, expected) in test_cases {
+            println!("Testing: {} -> expected: {}", input, expected);
+            
+            let path = Path::new(input);
+            println!("Input components:");
+            for (i, comp) in path.components().enumerate() {
+                println!("  {}: {:?}", i, comp);
+            }
+            
+            let result = clean(input);
+            println!("Result: {:?}", result);
+            println!("Result display: {}", result.display());
+            
+            let expected_path = PathBuf::from(expected);
+            println!("Expected: {:?}", expected_path);
+            println!("Expected display: {}", expected_path.display());
+            
+            println!("Match: {}", result == expected_path);
+            println!("---");
+            
+            // Assert that it works correctly
+            assert_eq!(result, expected_path, "Failed for input: {}", input);
+        }
+    }
+
+    #[test]
+    fn test_windows_prefix_root_fix() {
+        // This test verifies that our fix doesn't break anything on Unix
+        // and documents the expected behavior for Windows paths
+        
+        // These should work correctly regardless of the fix
+        let basic_tests = vec![
+            ("test/../other", "other"),
+            ("./test", "test"),
+            ("/test/../other", "/other"),
+            ("", "."),
+        ];
+        
+        for (input, expected) in basic_tests {
+            assert_eq!(clean(input), PathBuf::from(expected));
+        }
+        
+        // These are Windows-style paths that should work with forward slashes on Unix
+        // and the fix should not affect them
+        let windows_style_tests = vec![
+            ("C:/test", "C:/test"),
+            ("C:/test/../Users", "C:/Users"),
+        ];
+        
+        for (input, expected) in windows_style_tests {
+            assert_eq!(clean(input), PathBuf::from(expected));
         }
     }
 }
